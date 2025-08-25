@@ -36,7 +36,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // A nossa nova linha que cria todas as rotas para as tarefas (listar, criar, etc.)
     Route::resource('tarefas', TarefaController::class);
 });
+Route::middleware(['auth', 'verified'])->group(function () {
+    // ... (outras rotas) ...
 
+    Route::resource('tarefas', TarefaController::class);
+
+    // ADICIONE ESTA LINHA
+    Route::patch('/tarefas/{tarefa}/toggle', [TarefaController::class, 'toggle'])->name('tarefas.toggle');
+});
 
 /*
 |--------------------------------------------------------------------------
