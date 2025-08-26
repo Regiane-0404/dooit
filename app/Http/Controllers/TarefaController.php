@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Tarefa;
-use Illuminate\Http\RedirectResponse; // Importante para o tipo de retorno
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Redirect; // Importante para o redirecionamento
+use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -16,30 +16,31 @@ class TarefaController extends Controller
      */
     public function index(Request $request): Response
     {
-        $query = Tarefa::query();
+        // CORREÇÃO 1: A query agora começa já a filtrar pelo utilizador logado.
+        $query = Tarefa::where('user_id', auth()->id());
 
-        // Filtro de estado (já existente)
+        // Filtro de estado
         if ($request->filled('estado')) {
             $query->where('estado', $request->input('estado'));
         }
 
-        // NOVO: Filtro de prioridade
+        // Filtro de prioridade
         if ($request->filled('prioridade')) {
             $query->where('prioridade', $request->input('prioridade'));
+        }
+
+        // CORREÇÃO 2: Adicionado o filtro de data que faltava
+        if ($request->filled('data_vencimento')) {
+            $query->whereDate('data_vencimento', $request->input('data_vencimento'));
         }
 
         $tarefas = $query->latest()->get();
 
         return Inertia::render('Tarefas/Index', [
             'tarefas' => $tarefas,
-            // Agora passamos ambos os filtros para o frontend
-            'filtros' => $request->only(['estado', 'prioridade']),
+            // Passamos todos os filtros para o frontend
+            'filtros' => $request->only(['estado', 'prioridade', 'data_vencimento']),
         ]);
-    }
-
-    public function create()
-    {
-        // Não vamos usar este método diretamente com o Vue.js, o formulário estará num modal.
     }
 
     /**
@@ -47,7 +48,6 @@ class TarefaController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        // 1. Validar os dados recebidos do formulário.
         $validated = $request->validate([
             'titulo' => 'required|string|max:255',
             'descricao' => 'nullable|string',
@@ -56,33 +56,24 @@ class TarefaController extends Controller
             'horario' => 'nullable|date_format:H:i',
         ]);
 
-        // 2. Criar a tarefa na base de dados usando o Model.
-        // O Laravel vai preencher automaticamente as colunas com base no $fillable que definimos.
-        Tarefa::create($validated);
+        // O seu código aqui estava correto, mas esta é uma forma ligeiramente mais limpa
+        // de adicionar o user_id e criar a tarefa.
+        $request->user()->tarefas()->create($validated);
 
-        // 3. Redirecionar o utilizador de volta para a página de listagem de tarefas.
         return Redirect::route('tarefas.index');
     }
 
     /**
-     * Display the specified resource.
+     * Update the specified resource in storage.
      */
-    public function show(Tarefa $tarefa)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Tarefa $tarefa)
-    {
-        //
-    }
-
     public function update(Request $request, Tarefa $tarefa): RedirectResponse
     {
-        // 1. Validar os dados recebidos (as mesmas regras da criação).
+        // CORREÇÃO 3: Adicionar verificação de autorização (boa prática).
+        // Isto garante que um utilizador não pode editar a tarefa de outro.
+        if ($tarefa->user_id !== auth()->id()) {
+            abort(403);
+        }
+
         $validated = $request->validate([
             'titulo' => 'required|string|max:255',
             'descricao' => 'nullable|string',
@@ -91,33 +82,40 @@ class TarefaController extends Controller
             'horario' => 'nullable|date_format:H:i',
         ]);
 
-        // 2. Atualizar a tarefa com os dados validados.
         $tarefa->update($validated);
 
-        // 3. Redirecionar de volta para a página de listagem.
         return Redirect::route('tarefas.index');
     }
 
+    /**
+     * Remove the specified resource from storage.
+     */
     public function destroy(Tarefa $tarefa): RedirectResponse
     {
-        // Usa o método 'delete' do Eloquent para remover o registo da base de dados.
+        // Adicionar verificação de autorização
+        if ($tarefa->user_id !== auth()->id()) {
+            abort(403);
+        }
+
         $tarefa->delete();
 
-        // Redireciona de volta para a página de listagem.
         return Redirect::route('tarefas.index');
     }
+
     /**
      * Altera o estado de uma tarefa entre 'pendente' e 'concluida'.
      */
     public function toggle(Tarefa $tarefa): RedirectResponse
     {
-        // Altera o estado da tarefa
+        // Adicionar verificação de autorização
+        if ($tarefa->user_id !== auth()->id()) {
+            abort(403);
+        }
+
         $tarefa->estado = $tarefa->estado === 'pendente' ? 'concluida' : 'pendente';
 
-        // Guarda a alteração na base de dados
         $tarefa->save();
 
-        // Redireciona de volta para a página de listagem
         return Redirect::route('tarefas.index');
     }
 }
