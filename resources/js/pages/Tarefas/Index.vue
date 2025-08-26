@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3'; // Certifique-se de que Link está importado
 import { ref } from 'vue';
 import { Button } from '@/components/ui/button';
 import TarefaForm from '@/components/Tarefas/TarefaForm.vue';
@@ -13,34 +13,36 @@ type Tarefa = {
     prioridade: 'baixa' | 'media' | 'alta';
     estado: 'pendente' | 'concluida';
     data_vencimento: string | null;
+    horario: string | null;
 };
 
 defineProps<{
     tarefas: Array<Tarefa>;
+    filtros: {
+        estado: string | null;
+        prioridade: string | null;
+    };
 }>();
 
-// A nossa variável de estado para saber se o formulário está aberto
+// **** CÓDIGO RESTAURADO ****
 const showingForm = ref(false);
-// A nossa nova variável de estado para guardar a tarefa que está a ser editada
 const editingTask = ref<Tarefa | null>(null);
 
-// Função para abrir o formulário para criar uma NOVA tarefa
 const openCreateForm = () => {
-    editingTask.value = null; // Garante que não estamos a editar
+    editingTask.value = null;
     showingForm.value = true;
 };
 
-// Nova função para abrir o formulário para EDITAR uma tarefa existente
 const openEditForm = (tarefa: Tarefa) => {
-    editingTask.value = tarefa; // Guarda a tarefa a ser editada
+    editingTask.value = tarefa;
     showingForm.value = true;
 };
 
-// Função para fechar o formulário (limpa tudo)
 const closeForm = () => {
     showingForm.value = false;
     editingTask.value = null;
 };
+// **** FIM DO CÓDIGO RESTAURADO ****
 </script>
 
 <template>
@@ -55,16 +57,61 @@ const closeForm = () => {
                     <Button @click="openCreateForm" v-if="!showingForm">Adicionar Tarefa</Button>
                 </div>
 
-                <!-- Passamos a tarefa a ser editada para o nosso formulário -->
+                <div class="space-y-2">
+                    <!-- **** CÓDIGO RESTAURADO **** -->
+                    <div class="flex items-center space-x-2">
+                        <span class="text-sm font-medium text-gray-600">Estado:</span>
+                        <Link :href="route('tarefas.index', { prioridade: filtros.prioridade })"
+                            class="px-3 py-1 text-sm rounded-full transition"
+                            :class="{ 'bg-blue-500 text-white': !filtros.estado, 'text-gray-700 hover:bg-gray-200': filtros.estado }">
+                            Todas
+                        </Link>
+                        <Link :href="route('tarefas.index', { estado: 'pendente', prioridade: filtros.prioridade })"
+                            class="px-3 py-1 text-sm rounded-full transition"
+                            :class="{ 'bg-blue-500 text-white': filtros.estado === 'pendente', 'text-gray-700 hover:bg-gray-200': filtros.estado !== 'pendente' }">
+                            Pendentes
+                        </Link>
+                        <Link :href="route('tarefas.index', { estado: 'concluida', prioridade: filtros.prioridade })"
+                            class="px-3 py-1 text-sm rounded-full transition"
+                            :class="{ 'bg-blue-500 text-white': filtros.estado === 'concluida', 'text-gray-700 hover:bg-gray-200': filtros.estado !== 'concluida' }">
+                            Concluídas
+                        </Link>
+                    </div>
+                    <!-- **** FIM DO CÓDIGO RESTAURADO **** -->
+
+                    <div class="flex items-center space-x-2">
+                        <span class="text-sm font-medium text-gray-600">Prioridade:</span>
+                        <Link :href="route('tarefas.index', { estado: filtros.estado })"
+                              class="px-3 py-1 text-sm rounded-full transition"
+                              :class="{ 'bg-blue-500 text-white': !filtros.prioridade, 'text-gray-700 hover:bg-gray-200': filtros.prioridade }">
+                            Todas
+                        </Link>
+                        <Link :href="route('tarefas.index', { prioridade: 'baixa', estado: filtros.estado })"
+                              class="px-3 py-1 text-sm rounded-full transition"
+                              :class="{ 'bg-blue-500 text-white': filtros.prioridade === 'baixa', 'text-gray-700 hover:bg-gray-200': filtros.prioridade !== 'baixa' }">
+                            Baixa
+                        </Link>
+                        <Link :href="route('tarefas.index', { prioridade: 'media', estado: filtros.estado })"
+                              class="px-3 py-1 text-sm rounded-full transition"
+                              :class="{ 'bg-blue-500 text-white': filtros.prioridade === 'media', 'text-gray-700 hover:bg-gray-200': filtros.prioridade !== 'media' }">
+                            Média
+                        </Link>
+                        <Link :href="route('tarefas.index', { prioridade: 'alta', estado: filtros.estado })"
+                              class="px-3 py-1 text-sm rounded-full transition"
+                              :class="{ 'bg-blue-500 text-white': filtros.prioridade === 'alta', 'text-gray-700 hover:bg-gray-200': filtros.prioridade !== 'alta' }">
+                            Alta
+                        </Link>
+                    </div>
+                </div>
+
                 <TarefaForm v-if="showingForm" :tarefa-to-edit="editingTask" @close="closeForm" />
 
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 text-gray-900">
                         <div v-if="tarefas.length === 0">
-                            Ainda não tem nenhuma tarefa. Que tal adicionar uma?
+                            Nenhuma tarefa encontrada para este filtro.
                         </div>
                         <div v-else>
-                            <!-- Quando o TarefaItem emite o evento 'edit', chamamos a nossa função openEditForm -->
                             <TarefaItem
                                 v-for="tarefa in tarefas"
                                 :key="tarefa.id"

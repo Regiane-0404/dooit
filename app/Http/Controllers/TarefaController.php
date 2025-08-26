@@ -14,19 +14,29 @@ class TarefaController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        // 1. Buscar todas as tarefas da base de dados.
-        $tarefas = Tarefa::latest()->get(); // 'latest()' ordena as tarefas da mais nova para a mais antiga.
+        $query = Tarefa::query();
 
-        // 2. Enviar as tarefas para o componente Vue através das 'props'.
+        // Filtro de estado (já existente)
+        if ($request->filled('estado')) {
+            $query->where('estado', $request->input('estado'));
+        }
+
+        // NOVO: Filtro de prioridade
+        if ($request->filled('prioridade')) {
+            $query->where('prioridade', $request->input('prioridade'));
+        }
+
+        $tarefas = $query->latest()->get();
+
         return Inertia::render('Tarefas/Index', [
             'tarefas' => $tarefas,
+            // Agora passamos ambos os filtros para o frontend
+            'filtros' => $request->only(['estado', 'prioridade']),
         ]);
     }
-    /**
-     * Show the form for creating a new resource.
-     */
+
     public function create()
     {
         // Não vamos usar este método diretamente com o Vue.js, o formulário estará num modal.
@@ -43,6 +53,7 @@ class TarefaController extends Controller
             'descricao' => 'nullable|string',
             'prioridade' => 'nullable|string|in:baixa,media,alta',
             'data_vencimento' => 'nullable|date',
+            'horario' => 'nullable|date_format:H:i',
         ]);
 
         // 2. Criar a tarefa na base de dados usando o Model.
@@ -77,6 +88,7 @@ class TarefaController extends Controller
             'descricao' => 'nullable|string',
             'prioridade' => 'nullable|string|in:baixa,media,alta',
             'data_vencimento' => 'nullable|date',
+            'horario' => 'nullable|date_format:H:i',
         ]);
 
         // 2. Atualizar a tarefa com os dados validados.

@@ -1,6 +1,7 @@
 <?php
 
-use App\Http\Controllers\TarefaController;
+use App\Http\Controllers\Api\WeatherController; // Import do WeatherController
+use App\Http\Controllers\TarefaController; // Import do TarefaController
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -8,9 +9,6 @@ use Inertia\Inertia;
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
-|
-| Rota pública principal da aplicação.
-|
 */
 
 Route::get('/', function () {
@@ -21,30 +19,24 @@ Route::get('/', function () {
 |--------------------------------------------------------------------------
 | Rotas Autenticadas
 |--------------------------------------------------------------------------
-|
-| Todas as rotas dentro deste grupo só podem ser acedidas por utilizadores
-| que tenham feito login.
-|
+| Todas as rotas aqui dentro exigem que o utilizador esteja logado.
 */
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    // A rota do Dashboard que já existia
+
+    // Rota do Dashboard
     Route::get('dashboard', function () {
         return Inertia::render('Dashboard');
     })->name('dashboard');
 
-    // A nossa nova linha que cria todas as rotas para as tarefas (listar, criar, etc.)
+    // Nossas rotas de TAREFAS
     Route::resource('tarefas', TarefaController::class);
-});
-Route::middleware(['auth', 'verified'])->group(function () {
-    // ... (outras rotas) ...
-
-    Route::resource('tarefas', TarefaController::class);
-
-    // ADICIONE ESTA LINHA
     Route::patch('/tarefas/{tarefa}/toggle', [TarefaController::class, 'toggle'])->name('tarefas.toggle');
-});
 
+    // Nossa nova rota da API de METEOROLOGIA
+    Route::get('/api/weather', [WeatherController::class, 'show'])->name('api.weather');
+    Route::get('/api/news', [WeatherController::class, 'getNews'])->name('api.news');
+});
 /*
 |--------------------------------------------------------------------------
 | Ficheiros de Rotas Adicionais

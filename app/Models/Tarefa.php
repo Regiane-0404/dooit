@@ -15,5 +15,6 @@ class Tarefa extends Model
         'estado',
         'prioridade',
         'data_vencimento',
+        'horario',
     ];
 }
