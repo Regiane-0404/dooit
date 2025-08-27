@@ -38,7 +38,7 @@ class TarefaController extends Controller
 
         return Inertia::render('Tarefas/Index', [
             'tarefas' => $tarefas,
-            // Passamos todos os filtros para o frontend
+           
             'filtros' => $request->only(['estado', 'prioridade', 'data_vencimento']),
         ]);
     }

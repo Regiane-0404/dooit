@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('prioridade')->default('media');
             $table->date('data_vencimento')->nullable();
             $table->timestamps(); // Cria as colunas 'created_at' e 'updated_at'
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
         });
     }
     /**
